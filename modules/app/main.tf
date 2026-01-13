@@ -1,5 +1,18 @@
-# 1. 自动处理目录与文件分发
-resource "null_resource" "file_distribution" {
+terraform {
+  required_providers {
+    docker = {
+      source  = "kreuzwerker/docker"
+      version = ">= 3.0.1"
+    }
+    null = {
+      source  = "hashicorp/null"
+      version = ">= 3.0.0"
+    }
+  }
+}
+
+# 1. 自动创建远程目录 (执行一次)
+resource "null_resource" "directories" {
   connection {
     type        = "ssh"
     user        = var.ssh_user
@@ -7,7 +20,6 @@ resource "null_resource" "file_distribution" {
     host        = var.remote_host
   }
 
-  # 自动创建所有配置文件所在的目录
   provisioner "remote-exec" {
     inline = flatten([
       for local, remote in var.config_files : [
@@ -15,26 +27,37 @@ resource "null_resource" "file_distribution" {
       ]
     ])
   }
-
-  # 自动分发文件
-  dynamic "provisioner" {
-    for_each = var.config_files
-    content {
-      source      = provisioner.key # 本地文件路径
-      destination = provisioner.value # 远程目标路径
-    }
-  }
 }
 
-# 2. 容器定义
+# 2. 自动分发文件 (每个文件一个资源实例)
+resource "null_resource" "file_distribution" {
+  for_each = var.config_files
+
+  connection {
+    type        = "ssh"
+    user        = var.ssh_user
+    private_key = file(var.ssh_private_key_path)
+    host        = var.remote_host
+  }
+
+  provisioner "file" {
+    source      = each.key
+    destination = each.value
+  }
+
+  depends_on = [null_resource.directories]
+}
+
+# 3. 容器定义
 resource "docker_container" "this" {
   name  = var.app_name
   image = var.image
 
+  # 必须等所有文件都分发完
   depends_on = [null_resource.file_distribution]
 
   env = var.env
-
+# ... (rest of the file remains the same, but I'll replace the block to be sure)
   dynamic "ports" {
     for_each = var.ports
     content {
@@ -43,7 +66,6 @@ resource "docker_container" "this" {
     }
   }
 
-  # 自动挂载配置文件
   dynamic "volumes" {
     for_each = var.config_files
     content {
@@ -52,7 +74,6 @@ resource "docker_container" "this" {
     }
   }
 
-  # 挂载数据卷
   dynamic "volumes" {
     for_each = var.data_volumes
     content {

@@ -3,7 +3,14 @@ variable "app_name" {
 }
 
 variable "image" {
-  type = string
+  type        = string
+  description = "Docker 镜像完整路径 (例如: harbor.local/library/app:v1)"
+  
+  # 友好提示：允许 [域名/项目/名称:标签] 或 [名称:标签]
+  validation {
+    condition     = can(regex("^([^/]+/)*([^/]+):([^/]+)$", var.image))
+    error_message = "错误: 镜像格式建议包含 [域名]/[项目]/[名称]:[标签]，或至少包含 [名称]:[标签]。"
+  }
 }
 
 variable "remote_host" {
@@ -51,4 +58,19 @@ variable "healthcheck" {
 variable "data_volumes" {
   type    = map(string)
   default = {}
+}
+
+variable "wait" {
+  type    = bool
+  default = true
+}
+
+variable "wait_timeout" {
+  type    = number
+  default = 60
+}
+
+variable "command" {
+  type    = list(string)
+  default = null
 }

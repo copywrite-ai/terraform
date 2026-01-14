@@ -1,0 +1,13 @@
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+*.tfvars
+*.tfvars.json
+
+# Local sensitive data
+data/mysql/*
+data/host_data/*
+mysql.env
+my.cnf

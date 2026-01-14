@@ -1,0 +1,4 @@
+remote_ip            = "192.168.139.173"
+ssh_user             = "peng"
+ssh_private_key_path = "~/.ssh/id_ed25519"
+host_data_path       = "/Users/peng/Documents/code/2026-workspace/terraform/data"

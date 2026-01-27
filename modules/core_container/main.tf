@@ -72,6 +72,7 @@ resource "null_resource" "archives" {
 
   provisioner "remote-exec" {
     inline = [
+      "rm -rf ${var.archives[count.index].destination}",
       "mkdir -p ${var.archives[count.index].destination}",
       var.archives[count.index].type == "tar.gz" ? "tar -xzf ${var.archives[count.index].destination}.${count.index}.tmp -C ${var.archives[count.index].destination}" : "unzip -o ${var.archives[count.index].destination}.${count.index}.tmp -d ${var.archives[count.index].destination}",
       "rm -f ${var.archives[count.index].destination}.${count.index}.tmp"
@@ -145,7 +146,6 @@ resource "docker_container" "this" {
     null_resource.pre_start_hooks
   ]
 
-  must_run     = var.must_run
   wait         = var.wait
   wait_timeout = var.wait_timeout
 

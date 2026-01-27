@@ -1,0 +1,19 @@
+# Started dump at: 2026-01-14 06:48:59
+[config]
+quote-character = BACKTICK
+
+[myloader_session_variables]
+SQL_MODE='NO_AUTO_VALUE_ON_ZERO,ONLY_FULL_GROUP_BY,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' /*!40101
+
+[source]
+# Channel_Name = '' # It can be use to setup replication FOR CHANNEL
+# SOURCE_LOG_FILE = "binlog.000002"
+# SOURCE_LOG_POS = 972
+
+[`test_db`.`users`]
+real_table_name=users
+rows = 1
+[config]
+max-statement-size = 317
+num-sequences = 0
+# Finished dump at: 2026-01-14 06:48:59

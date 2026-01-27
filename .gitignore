@@ -8,8 +8,6 @@
 
 # Local sensitive data
 data/mysql/*
-data/host_data/*
-data/host_data.zip
 mysql.env
 my.cnf
 

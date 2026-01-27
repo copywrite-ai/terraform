@@ -24,7 +24,8 @@ variable "env" {
   default = [
     "MYSQL_ROOT_PASSWORD=",
     "MYSQL_ALLOW_EMPTY_PASSWORD=yes",
-    "MYSQL_MAX_CONNECTIONS=2000"
+    "MYSQL_MAX_CONNECTIONS=2000",
+    "MYSQL_DATABASE=test_db"
   ]
 }
 

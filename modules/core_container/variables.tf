@@ -112,6 +112,7 @@ variable "pre_start_command" {
 }
 
 variable "must_run" {
-  type    = bool
-  default = true
+  description = "If true, Terraform will error if the container exits. Useful for services; set to false for tasks."
+  type        = bool
+  default     = true
 }

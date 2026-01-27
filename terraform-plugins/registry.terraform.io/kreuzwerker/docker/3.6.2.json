@@ -1,0 +1,16 @@
+{
+  "archives": {
+    "darwin_arm64": {
+      "hashes": [
+        "h1:/Oe7tViXf/xyQ4Pg8cDifMlD3RthOYkslwQiRgx7BTE="
+      ],
+      "url": "terraform-provider-docker_3.6.2_darwin_arm64.zip"
+    },
+    "linux_amd64": {
+      "hashes": [
+        "h1:1K3j0xUY2D0+E+DBDQc6k1u6Al9MkuNWrIC9rnvwFSM="
+      ],
+      "url": "terraform-provider-docker_3.6.2_linux_amd64.zip"
+    }
+  }
+}

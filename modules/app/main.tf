@@ -22,6 +22,7 @@ module "migration_container" {
   # 使用传入的 database_ip
   command      = ["sh", "-c", "myloader --host=${var.database_ip} --user=root --password='' --directory=/backups/host_data --overwrite-tables --verbose=3"]
   wait         = false
+  must_run     = false
   privileged   = true
   network_mode = "host"
 }

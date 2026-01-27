@@ -9,7 +9,7 @@ variable "image" {
   # 友好提示：允许 [域名/项目/名称:标签] 或 [名称:标签]
   validation {
     condition     = can(regex("^([^/]+/)*([^/]+):([^/]+)$", var.image))
-    error_message = "错误: 镜像格式建议包含 [域名]/[项目]/[名称]:[标签]，或至少包含 [名称]:[标签]。"
+    error_message = "The image name must be in the format [domain/project/name:tag] or [name:tag]."
   }
 }
 
@@ -109,4 +109,9 @@ variable "command" {
 variable "pre_start_command" {
   type    = string
   default = ""
+}
+
+variable "must_run" {
+  type    = bool
+  default = true
 }

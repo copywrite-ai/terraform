@@ -145,6 +145,7 @@ resource "docker_container" "this" {
     null_resource.pre_start_hooks
   ]
 
+  must_run     = var.must_run
   wait         = var.wait
   wait_timeout = var.wait_timeout
 

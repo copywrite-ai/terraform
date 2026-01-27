@@ -1,0 +1,18 @@
+{
+    "archives": {
+        "darwin_arm64": {
+            "hashes": [
+                "h1:ozK1HS+/mhCeYR8Ph6Lo+8ykvGeJyfAf3fuEp5DvQ/Y=",
+                "zh:e749e2ef9c1841de69f21fa4f0cee3a1aae6ec7b624af8f9a5a07c42642f1e5d"
+            ],
+            "url": "terraform-provider-docker_3.6.1_darwin_arm64.zip"
+        },
+        "linux_amd64": {
+            "hashes": [
+                "h1:ozK1HS+/mhCeYR8Ph6Lo+8ykvGeJyfAf3fuEp5DvQ/Y=",
+                "zh:0856751d4c84f93832325bb8f4f1748f8b1239661aa389fb16e17c3de08d0544"
+            ],
+            "url": "terraform-provider-docker_3.6.1_linux_amd64.zip"
+        }
+    }
+}

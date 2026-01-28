@@ -1,23 +1,48 @@
-variable "remote_ip" {
-  description = "Target Cloud AnolisOS VM IP address"
-  type        = string
-  default     = "106.14.26.23"
+################################################################################
+# 全局变量定义 - 多主机 Docker 管理架构
+################################################################################
+
+# 主机配置列表
+variable "hosts" {
+  description = "远程主机配置映射"
+  type = map(object({
+    ip                   = string
+    ssh_user             = string
+    ssh_private_key_path = string
+    data_path            = string
+  }))
+  default = {
+    host_a = {
+      ip                   = "106.14.26.23"
+      ssh_user             = "root"
+      ssh_private_key_path = "~/.ssh/id_ed25519"
+      data_path            = "/root/terraform/data"
+    }
+    host_b = {
+      ip                   = ""  # 待填写
+      ssh_user             = "root"
+      ssh_private_key_path = "~/.ssh/id_ed25519"
+      data_path            = "/root/terraform/data"
+    }
+    host_c = {
+      ip                   = ""  # 待填写
+      ssh_user             = "root"
+      ssh_private_key_path = "~/.ssh/id_ed25519"
+      data_path            = "/root/terraform/data"
+    }
+  }
 }
 
-variable "ssh_user" {
-  description = "SSH username for the remote host"
+# 当前激活的主机（用于部署服务时选择节点）
+variable "active_host" {
+  description = "当前部署目标主机的 key（对应 hosts 中的 key）"
   type        = string
-  default     = "root"
+  default     = "host_a"
 }
 
-variable "ssh_private_key_path" {
-  description = "Path to the SSH private key"
+# 服务间通讯的私网 IP（先 hardcode）
+variable "mysql_private_ip" {
+  description = "MySQL 服务的私网 IP 地址"
   type        = string
-  default     = "~/.ssh/id_ed25519"
-}
-
-variable "host_data_path" {
-  description = "Remote host path for volume mounting"
-  type        = string
-  default     = "/root/terraform/data"
+  default     = "172.24.216.194"
 }

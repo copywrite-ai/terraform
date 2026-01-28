@@ -9,7 +9,7 @@ variable "image" {
   # 友好提示：允许 [域名/项目/名称:标签] 或 [名称:标签]
   validation {
     condition     = can(regex("^([^/]+/)*([^/]+):([^/]+)$", var.image))
-    error_message = "The image name must be in the format [domain/project/name:tag] or [name:tag]."
+    error_message = "错误: 镜像格式建议包含 [域名]/[项目]/[名称]:[标签]，或至少包含 [名称]:[标签]。"
   }
 }
 
@@ -111,8 +111,9 @@ variable "pre_start_command" {
   default = ""
 }
 
+# 是否为一次性任务（任务完成后容器退出不报错）
 variable "must_run" {
-  description = "If true, Terraform will error if the container exits. Useful for services; set to false for tasks."
+  description = "true = 常驻服务（退出报错），false = 一次性任务（退出正常）"
   type        = bool
   default     = true
 }

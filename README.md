@@ -1,67 +1,177 @@
-# Terraform 模块化组合部署方案 (DB + App)
+# Terraform 多主机 Docker 管理架构
 
-本项目采用 Terraform “父模块（Root Module）调用子模块（Sub-modules）” 的地道模式，实现了数据库（MySQL）与应用（Migration）的自动化部署与依赖管理。
+本项目采用 Terraform 实现多主机 Docker 容器自动化部署与管理，支持：
+- 通过 SSH 远程管理多台服务器上的 Docker 容器
+- 每个服务对应一个独立模块，支持**常驻服务**和**一次性任务**
+- 模块间通过健康检查驱动的依赖关系，确保上游服务就绪后才启动下游
 
-## 核心架构：模块化组合 (Module Composition)
+---
 
-项目通过将资源解耦到不同文件夹中，在根目录进行组合，实现了清晰的逻辑边界和自动化的依赖调度。
+## 架构概览
 
-### 目录结构
 ```plaintext
-.
-├── main.tf              # 环境编排“指挥官”，定义模块间的串联逻辑
-├── variables.tf         # 全局变量定义
+terraform-hospital/
+├── main.tf                     # 主编排文件：定义 Provider 和模块调用
+├── variables.tf                # 全局变量：主机配置、服务参数
+│
 ├── modules/
-│   ├── core_container/  # 通用 Docker 容器管理模块（基础砖块）
-│   ├── db/              # 数据库特化模块，负责 MySQL 启动与 IP 输出
+│   ├── core_container/         # 核心模块：通用容器管理
+│   │   ├── main.tf             # 容器资源定义
+│   │   ├── variables.tf        # 输入变量
+│   │   └── outputs.tf          # 输出（container_id 用于依赖）
+│   │
+│   ├── db/                     # MySQL 数据库服务模块
 │   │   ├── main.tf
 │   │   ├── variables.tf
 │   │   └── outputs.tf
-│   └── app/             # 应用特化模块，接收外部 IP 并执行数据恢复
+│   │
+│   └── app/                    # 一次性任务模块（如 mydumper 恢复）
 │       ├── main.tf
 │       └── variables.tf
-└── data/                # 存放 SQL 备份等静态资源
+│
+└── data/                       # 静态资源目录
+    └── host_data/              # SQL 备份文件
 ```
 
-## 关键技术特性
+---
 
-1. **隐式依赖注入**：
-   在 `main.tf` 中，`module.my_app` 引用了 `module.my_db.db_private_ip`。这建立了一个基于数据流的调度关系，Terraform 会自动确保数据库在应用启动前已准备就绪。
+## 核心特性
 
-2. **Host 模式通讯优化**：
-   针对 `network_mode = "host"` 的场景，系统内部通过私网 IP（或回环 IP）进行通讯，绕过防火墙限制，确保了连接的稳定性。
+### 1. 多主机支持
 
-3. **完全幂等性**：
-   - 只要配置和代码未变，再次运行 `apply` 不会产生任何副作用。
-   - SQL 迁移工具通过文件 Hash 校验，仅在备份文件发生变化时才触发数据恢复。
+在 `variables.tf` 中定义主机列表：
 
-4. **预热加速**：
-   已配置远程 Docker 镜像加速（阿里云镜像源），大幅提升了首次部署的速度。
+```hcl
+variable "hosts" {
+  default = {
+    host_a = {
+      ip                   = "106.14.26.23"
+      ssh_user             = "root"
+      ssh_private_key_path = "~/.ssh/id_ed25519"
+      data_path            = "/root/terraform/data"
+    }
+    host_b = { ip = "", ... }  # 待填写
+    host_c = { ip = "", ... }  # 待填写
+  }
+}
 
-## 快速上手
+variable "active_host" {
+  default = "host_a"  # 当前部署目标
+}
+```
+
+部署时通过 `-var` 切换目标主机：
+
+```bash
+terraform apply -var="active_host=host_b"
+```
+
+### 2. 常驻服务 vs 一次性任务
+
+| 类型 | `must_run` | `wait` | 说明 |
+|------|-----------|--------|------|
+| 常驻服务 | `true` (默认) | `true` | 容器必须持续运行，退出则报错 |
+| 一次性任务 | `false` | `false` | 容器执行完成后正常退出 |
+
+### 3. 健康检查与依赖管理
+
+**MySQL 模块** 配置了健康检查：
+```hcl
+healthcheck = {
+  test         = ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+  interval     = "5s"
+  timeout      = "10s"
+  retries      = 30
+  start_period = "60s"
+}
+```
+
+**依赖实现原理**：
+```hcl
+# main.tf 中
+module "mydumper_restore" {
+  source      = "./modules/app"
+  database_ip = module.mysql.db_private_ip  # 引用上游输出
+}
+```
+
+由于 `db_private_ip` 的值依赖于 `container_id`，而 `container_id` 只有在容器创建并通过健康检查后才会输出，因此 Terraform 会**自动等待 MySQL 就绪后**才启动 mydumper 任务。
+
+---
+
+## 快速开始
 
 ### 前置要求
-- 本地安装 Docker（推荐使用 OrbStack 或 Docker Desktop）。
-- 本地有 SSH 访问远程服务器的权限。
+- 本地安装 Docker（用于运行 Terraform）
+- SSH 密钥配置完成（默认 `~/.ssh/id_ed25519`）
+- 远程服务器已安装 Docker
 
-### 执行部署
-建议使用 Docker 化的 Terraform 运行，以保证环境一致性：
+### 初始化
+```bash
+docker run --rm \
+  -v $(pwd):/workspace \
+  -v ~/.ssh:/root/.ssh \
+  -w /workspace \
+  hashicorp/terraform:latest init
+```
 
-1. **初始化**：
-   ```bash
-   docker run --rm -v $(pwd):/workspace -v ~/.ssh:/root/.ssh -w /workspace hashicorp/terraform:latest init
-   ```
+### 部署到 host_a
+```bash
+docker run --rm \
+  -v $(pwd):/workspace \
+  -v ~/.ssh:/root/.ssh \
+  -w /workspace \
+  hashicorp/terraform:latest apply -auto-approve
+```
 
-2. **预览变更**：
-   ```bash
-   docker run --rm -v $(pwd):/workspace -v ~/.ssh:/root/.ssh -w /workspace hashicorp/terraform:latest plan
-   ```
+### 部署到其他主机
+```bash
+terraform apply -var="active_host=host_b"
+```
 
-3. **执行部署**：
-   ```bash
-   docker run --rm -v $(pwd):/workspace -v ~/.ssh:/root/.ssh -w /workspace hashicorp/terraform:latest apply -auto-approve
-   ```
+---
 
-## 维护说明
-- **修改数据库配置**：直接编辑 `modules/db/main.tf` 或根目录的参数传递。
-- **更新 SQL 数据**：替换 `data/host_data/` 下的文件，再次 `apply` 即可。
+## 模块说明
+
+### `modules/core_container`
+通用容器管理模块，支持：
+- 文件分发（`config_files`）
+- 压缩包分发与解压（`archives`）
+- 镜像拉取（支持离线模式）
+- 健康检查
+- 常驻/任务模式切换（`must_run`）
+
+### `modules/db`
+MySQL 数据库服务模块：
+- 自动创建数据库（`MYSQL_DATABASE`）
+- 配置健康检查
+- 输出 `db_private_ip` 和 `container_id`
+
+### `modules/app`
+mydumper 数据恢复任务模块：
+- 一次性任务（`must_run = false`）
+- 依赖 MySQL 健康后才执行
+- 自动分发并解压 SQL 备份
+
+---
+
+## 扩展指南
+
+### 添加新主机
+编辑 `variables.tf` 中的 `hosts` 变量：
+```hcl
+host_d = {
+  ip                   = "192.168.1.100"
+  ssh_user             = "root"
+  ssh_private_key_path = "~/.ssh/id_ed25519"
+  data_path            = "/data/terraform"
+}
+```
+
+### 添加新服务
+1. 在 `modules/` 下创建新目录
+2. 调用 `core_container` 模块
+3. 在 `main.tf` 中引用新模块并配置依赖
+
+### 添加新任务
+复制 `modules/app` 并修改 `command` 即可。

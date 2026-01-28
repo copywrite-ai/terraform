@@ -149,7 +149,7 @@ resource "docker_container" "this" {
   wait         = var.wait
   wait_timeout = var.wait_timeout
 
-  must_run     = var.must_run
+  must_run      = var.must_run
   privileged    = var.privileged
   security_opts = var.security_opts
   network_mode  = var.network_mode

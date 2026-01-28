@@ -99,34 +99,77 @@ module "mydumper_restore" {
 
 ---
 
-## 快速开始
+## 执行方式
 
-### 前置要求
-- 本地安装 Docker（用于运行 Terraform）
-- SSH 密钥配置完成（默认 `~/.ssh/id_ed25519`）
-- 远程服务器已安装 Docker
+本项目设计为通过 **Docker 容器化的 Terraform** 在本地执行，通过挂载实现：
+- SSH 密钥传递（用于远程连接）
+- 插件缓存共享（避免重复下载）
 
-### 初始化
+### 推荐的执行命令
+
 ```bash
+# 定义别名（可加入 ~/.zshrc 或 ~/.bashrc）
+alias tf='docker run --rm \
+  -v $(pwd):/workspace \
+  -v ~/.ssh:/root/.ssh \
+  -v $(pwd)/terraform-plugins:/workspace/terraform-plugins \
+  -w /workspace \
+  hashicorp/terraform:latest'
+
+# 使用
+tf init
+tf plan
+tf apply -auto-approve
+tf destroy
+```
+
+### 挂载说明
+
+| 挂载路径 | 用途 |
+|---------|------|
+| `-v $(pwd):/workspace` | 项目目录映射 |
+| `-v ~/.ssh:/root/.ssh` | SSH 密钥（用于远程部署） |
+| `-v $(pwd)/terraform-plugins:/workspace/terraform-plugins` | 本地 Provider 缓存 |
+
+### 离线模式（使用本地插件）
+
+如果网络受限，可以配置使用本地 Provider 镜像：
+
+```bash
+# 1. 创建 CLI 配置文件
+cat > ~/.terraformrc << 'EOF'
+provider_installation {
+  filesystem_mirror {
+    path    = "/workspace/terraform-plugins"
+    include = ["registry.terraform.io/*/*"]
+  }
+  direct {
+    exclude = ["registry.terraform.io/*/*"]
+  }
+}
+EOF
+
+# 2. 执行时挂载配置
 docker run --rm \
   -v $(pwd):/workspace \
   -v ~/.ssh:/root/.ssh \
+  -v ~/.terraformrc:/root/.terraformrc \
+  -v $(pwd)/terraform-plugins:/workspace/terraform-plugins \
   -w /workspace \
   hashicorp/terraform:latest init
 ```
 
-### 部署到 host_a
-```bash
-docker run --rm \
-  -v $(pwd):/workspace \
-  -v ~/.ssh:/root/.ssh \
-  -w /workspace \
-  hashicorp/terraform:latest apply -auto-approve
-```
+### 切换目标主机
 
-### 部署到其他主机
 ```bash
-terraform apply -var="active_host=host_b"
+# 部署到 host_a（默认）
+tf apply
+
+# 部署到 host_b
+tf apply -var="active_host=host_b"
+
+# 部署到 host_c
+tf apply -var="active_host=host_c"
 ```
 
 ---

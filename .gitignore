@@ -1,0 +1,11 @@
+# Terraform 临时文件
+.terraform/
+*.tfstate
+*.tfstate.backup
+.terraform.lock.hcl
+
+# 系统文件
+.DS_Store
+
+# 临时文件
+*.tmp

@@ -44,8 +44,6 @@ docker run --rm \
     "$TF_IMAGE" \
     providers mirror \
     -platform=linux_amd64 \
-    -platform=darwin_amd64 \
-    -platform=darwin_arm64 \
     terraform-plugins
 
 rm -f /tmp/tf_mirror.rc

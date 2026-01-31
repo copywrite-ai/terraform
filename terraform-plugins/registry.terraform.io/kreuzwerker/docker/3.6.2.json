@@ -1,0 +1,10 @@
+{
+  "archives": {
+    "linux_amd64": {
+      "hashes": [
+        "h1:1K3j0xUY2D0+E+DBDQc6k1u6Al9MkuNWrIC9rnvwFSM="
+      ],
+      "url": "terraform-provider-docker_3.6.2_linux_amd64.zip"
+    }
+  }
+}

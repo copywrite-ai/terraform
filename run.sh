@@ -49,9 +49,14 @@ VOLUMES=(
     -v "$PLUGIN_CACHE_DIR:/root/.terraform.d/plugin-cache"
 )
 
-# 如果存在本地 .terraformrc 配置，也挂载
-if [ -f "$HOME/.terraformrc" ]; then
+# 如果存在当前目录或本地 .terraformrc 配置，则挂载
+# 优先使用项目目录下的 .terraformrc，方便离线分发
+if [ -f "$SCRIPT_DIR/.terraformrc" ]; then
+    VOLUMES+=(-v "$SCRIPT_DIR/.terraformrc:/root/.terraformrc:ro")
+    echo "ℹ️ Using local .terraformrc from project directory"
+elif [ -f "$HOME/.terraformrc" ]; then
     VOLUMES+=(-v "$HOME/.terraformrc:/root/.terraformrc:ro")
+    echo "ℹ️ Using global .terraformrc from $HOME"
 fi
 
 # 如果存在离线插件目录，挂载它

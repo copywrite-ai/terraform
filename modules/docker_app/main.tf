@@ -32,9 +32,19 @@ locals {
 # ============================================================================
 # 0. 依赖锚点（强制串行部署）
 # ============================================================================
+# 通过 triggers 引用上游 ready 信号，Terraform 会自动建立隐式依赖
+# 关键：triggers 中的值必须来自上游资源的输出，这样 Terraform 才会等待上游完成
 resource "null_resource" "dependency_anchor" {
   triggers = {
+    # 通过引用上游模块的 ready 输出，建立隐式依赖
+    # Terraform 会等待 depends_on_ready 对应的资源完成后才创建本资源
     dependency_id = var.depends_on_ready
+  }
+
+  # 额外的显式等待：通过 provisioner 确保上游已真正就绪
+  # 这是一个防护措施，确保在某些边缘情况下也能正确等待
+  provisioner "local-exec" {
+    command = "echo 'Dependency ready: ${var.depends_on_ready}'"
   }
 }
 

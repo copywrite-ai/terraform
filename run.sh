@@ -10,6 +10,7 @@
 #   ./run.sh plan      # 预览变更
 #   ./run.sh apply     # 应用变更
 #   ./run.sh destroy   # 销毁资源
+#   ./run.sh clean     # 清理本地 Terraform 缓存文件
 #   ./run.sh <cmd>     # 任意 terraform 子命令
 #
 ################################################################################
@@ -86,6 +87,12 @@ echo "🚀 Running: terraform $*"
 echo "   Image: $TF_IMAGE"
 echo "   Workdir: $SCRIPT_DIR"
 echo ""
+
+if [ "$1" = "clean" ]; then
+    echo "🧹 Cleaning local Terraform cache files"
+    rm -rf "$SCRIPT_DIR/.terraform" "$SCRIPT_DIR/.terraform.lock.hcl"
+    exit 0
+fi
 
 docker run --rm -it \
     --platform linux/amd64 \

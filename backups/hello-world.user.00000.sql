@@ -5,3 +5,7 @@
 INSERT INTO `user` VALUES(1,"hello")
 ,(2,"world")
 ;
+-- Reactive Smoke Test Mon Feb  2 18:24:35 CST 2026
+-- Force Overwrite Test Mon Feb  2 18:27:33 CST 2026
+-- Final Overwrite Verification Mon Feb  2 18:28:43 CST 2026
+-- Ignore Errors Test Mon Feb  2 18:31:56 CST 2026

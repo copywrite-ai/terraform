@@ -78,7 +78,7 @@ resource "docker_container" "mydumper" {
   command = [
     "sh",
     "-c",
-    "myloader -h 127.0.0.1 -u root --password '${var.root_password}' -B ${var.database_name} -d /backups",
+    "myloader -h 127.0.0.1 -u root --password '${var.root_password}' -B ${var.database_name} -d /backups --overwrite-tables --ignore-errors=1050,1061,1062,1826",
   ]
 
   volumes {

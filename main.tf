@@ -11,9 +11,10 @@ terraform {
 
 variable "docker_host" {
   type    = string
-  default = "unix:///var/run/docker.sock"
+  default = ""
 }
 
+# SSH connection settings for remote Docker host access (used by provisioners).
 variable "ssh_host" {
   type    = string
   default = "127.0.0.1"
@@ -29,23 +30,26 @@ variable "ssh_key_path" {
   default = "/root/.ssh/id_ed25519"
 }
 
+# Base directory on the remote host for staging backups and related files.
 variable "remote_data_dir" {
   type    = string
   default = "/tmp/terraform-codex"
 }
 
+# Toggle the restore workflow on/off for demo convenience.
 variable "restore_enabled" {
   type    = bool
   default = true
 }
 
+# Where backups come from: "local" copies ./backups to remote, "remote" assumes pre-staged.
 variable "backup_source" {
   type    = string
   default = "local"
 }
 
 provider "docker" {
-  host = var.docker_host
+  host = var.docker_host != "" ? var.docker_host : "ssh://${var.ssh_user}@${var.ssh_host}"
 }
 
 variable "host_project_dir" {
@@ -69,6 +73,7 @@ module "mysql" {
   ssh_key_path = var.ssh_key_path
 }
 
+# Restore task: waits for MySQL health, stages backups (if local), then runs myloader.
 module "mydumper" {
   source = "./modules/mydumper"
 

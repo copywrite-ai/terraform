@@ -3,4 +3,4 @@ host_project_dir = "/Users/peng/Documents/code/2026-workspace/terraform-group/te
 ssh_host         = "106.14.26.23"
 ssh_user         = "root"
 ssh_key_path     = "/root/.ssh/id_ed25519"
-remote_data_dir  = "/root/terraform-codex"
+remote_data_dir  = "/tmp/terraform-codex"

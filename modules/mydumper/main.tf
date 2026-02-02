@@ -69,6 +69,7 @@ resource "docker_image" "mydumper" {
   name = "docker.1ms.run/mydumper/mydumper:latest"
 }
 
+# Ensure remote backups directory exists regardless of source.
 resource "null_resource" "ensure_backups_dir" {
   count = var.restore_enabled ? 1 : 0
 
@@ -85,6 +86,7 @@ resource "null_resource" "ensure_backups_dir" {
   }
 }
 
+# If backups are local, copy them to the remote host before restore.
 resource "null_resource" "stage_backups" {
   count = var.restore_enabled && var.backup_source == "local" ? 1 : 0
   triggers = {
@@ -112,6 +114,7 @@ resource "null_resource" "stage_backups" {
   }
 }
 
+# Run myloader as a one-off restore task.
 resource "docker_container" "mydumper" {
   count = var.restore_enabled ? 1 : 0
 
@@ -139,6 +142,7 @@ resource "docker_container" "mydumper" {
   depends_on = [null_resource.wait_for_mysql_health, null_resource.ensure_backups_dir, null_resource.stage_backups]
 }
 
+# Print restore logs to make demo results visible in apply output.
 resource "null_resource" "show_restore_logs" {
   count = var.restore_enabled ? 1 : 0
 

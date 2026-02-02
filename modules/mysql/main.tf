@@ -39,6 +39,7 @@ resource "docker_image" "mysql" {
   name = "docker.1ms.run/library/mysql:8.0.32"
 }
 
+# MySQL container for the demo database.
 resource "docker_container" "mysql" {
   name  = "hello-world-mysql"
   image = docker_image.mysql.image_id

@@ -20,12 +20,30 @@ variable "database_name" {
   type = string
 }
 
-variable "backups_path" {
+variable "local_backups_dir" {
   type = string
+}
+
+variable "remote_backups_dir" {
+  type = string
+}
+
+variable "backup_source" {
+  type    = string
+  default = "local"
+  validation {
+    condition     = contains(["local", "remote"], var.backup_source)
+    error_message = "backup_source must be \"local\" or \"remote\"."
+  }
 }
 
 variable "mysql_container_name" {
   type = string
+}
+
+variable "restore_enabled" {
+  type    = bool
+  default = true
 }
 
 variable "ssh_host" {
@@ -47,7 +65,46 @@ resource "docker_image" "mydumper" {
   name = "docker.1ms.run/mydumper/mydumper:latest"
 }
 
+resource "null_resource" "ensure_backups_dir" {
+  count = var.restore_enabled ? 1 : 0
+
+  connection {
+    type        = "ssh"
+    host        = var.ssh_host
+    user        = var.ssh_user
+    private_key = file(var.ssh_key_path)
+    agent       = false
+  }
+
+  provisioner "remote-exec" {
+    inline = ["mkdir -p ${var.remote_backups_dir}"]
+  }
+}
+
+resource "null_resource" "stage_backups" {
+  count = var.restore_enabled && var.backup_source == "local" ? 1 : 0
+
+  connection {
+    type        = "ssh"
+    host        = var.ssh_host
+    user        = var.ssh_user
+    private_key = file(var.ssh_key_path)
+    agent       = false
+  }
+
+  provisioner "remote-exec" {
+    inline = ["mkdir -p ${var.remote_backups_dir}"]
+  }
+
+  provisioner "file" {
+    source      = "${var.local_backups_dir}/"
+    destination = var.remote_backups_dir
+  }
+}
+
 resource "docker_container" "mydumper" {
+  count = var.restore_enabled ? 1 : 0
+
   name  = "hello-world-myloader"
   image = docker_image.mydumper.image_id
 
@@ -64,10 +121,31 @@ resource "docker_container" "mydumper" {
   ]
 
   volumes {
-    host_path      = var.backups_path
+    host_path      = var.remote_backups_dir
     container_path = "/backups"
     read_only      = false
   }
 
-  depends_on = [null_resource.wait_for_mysql_health]
+  depends_on = [null_resource.wait_for_mysql_health, null_resource.ensure_backups_dir, null_resource.stage_backups]
+}
+
+resource "null_resource" "show_restore_logs" {
+  count = var.restore_enabled ? 1 : 0
+
+  connection {
+    type        = "ssh"
+    host        = var.ssh_host
+    user        = var.ssh_user
+    private_key = file(var.ssh_key_path)
+    agent       = false
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "echo '--- myloader logs (hello-world-myloader) ---'",
+      "docker logs hello-world-myloader || true",
+    ]
+  }
+
+  depends_on = [docker_container.mydumper]
 }

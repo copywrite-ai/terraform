@@ -20,21 +20,8 @@ variable "database_name" {
   type = string
 }
 
-variable "local_backups_dir" {
-  type = string
-}
-
 variable "remote_backups_dir" {
   type = string
-}
-
-variable "backup_source" {
-  type    = string
-  default = "local"
-  validation {
-    condition     = contains(["local", "remote"], var.backup_source)
-    error_message = "backup_source must be \"local\" or \"remote\"."
-  }
 }
 
 variable "mysql_container_name" {
@@ -43,6 +30,11 @@ variable "mysql_container_name" {
 
 variable "mysql_container_id" {
   type = string
+}
+
+variable "staging_trigger" {
+  type    = string
+  default = ""
 }
 
 variable "restore_enabled" {
@@ -70,50 +62,6 @@ resource "docker_image" "mydumper" {
 }
 
 # Ensure remote backups directory exists regardless of source.
-resource "null_resource" "ensure_backups_dir" {
-  count = var.restore_enabled ? 1 : 0
-
-  connection {
-    type        = "ssh"
-    host        = var.ssh_host
-    user        = var.ssh_user
-    private_key = file(var.ssh_key_path)
-    agent       = false
-  }
-
-  provisioner "remote-exec" {
-    inline = ["mkdir -p ${var.remote_backups_dir}"]
-  }
-}
-
-# If backups are local, copy them to the remote host before restore.
-resource "null_resource" "stage_backups" {
-  count = var.restore_enabled && var.backup_source == "local" ? 1 : 0
-  triggers = {
-    backup_fingerprint = sha256(join("", [
-      for f in fileset(var.local_backups_dir, "**") :
-      filesha256("${var.local_backups_dir}/${f}")
-    ]))
-  }
-
-  connection {
-    type        = "ssh"
-    host        = var.ssh_host
-    user        = var.ssh_user
-    private_key = file(var.ssh_key_path)
-    agent       = false
-  }
-
-  provisioner "remote-exec" {
-    inline = ["mkdir -p ${var.remote_backups_dir}"]
-  }
-
-  provisioner "file" {
-    source      = "${var.local_backups_dir}/"
-    destination = var.remote_backups_dir
-  }
-}
-
 # Run myloader as a one-off restore task.
 resource "docker_container" "mydumper" {
   count = var.restore_enabled ? 1 : 0
@@ -139,7 +87,12 @@ resource "docker_container" "mydumper" {
     read_only      = false
   }
 
-  depends_on = [null_resource.wait_for_mysql_health, null_resource.ensure_backups_dir, null_resource.stage_backups]
+  labels {
+    label = "restore.staging_trigger"
+    value = var.staging_trigger
+  }
+
+  depends_on = [null_resource.wait_for_mysql_health]
 }
 
 # Print restore logs to make demo results visible in apply output.

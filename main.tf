@@ -73,6 +73,20 @@ module "mysql" {
   ssh_key_path = var.ssh_key_path
 }
 
+# Generic staging module for copying local backups to the remote host.
+module "staging_backups" {
+  source = "./modules/staging"
+
+  local_dir  = "${path.root}/backups"
+  remote_dir = "${var.remote_data_dir}/backups"
+  backup_source = var.backup_source
+  enabled    = var.restore_enabled
+
+  ssh_host     = var.ssh_host
+  ssh_user     = var.ssh_user
+  ssh_key_path = var.ssh_key_path
+}
+
 # Restore task: waits for MySQL health, stages backups (if local), then runs myloader.
 module "mydumper" {
   source = "./modules/mydumper"
@@ -80,16 +94,15 @@ module "mydumper" {
   project_root  = local.project_root
   root_password = "p@ssword"
   database_name = "hello-world"
-  local_backups_dir  = "${path.root}/backups"
-  remote_backups_dir = "${var.remote_data_dir}/backups"
-  backup_source = var.backup_source
+  remote_backups_dir = module.staging_backups.remote_dir
   restore_enabled = var.restore_enabled
   mysql_container_name = module.mysql.container_name
   mysql_container_id   = module.mysql.container_id
+  staging_trigger      = module.staging_backups.stage_copy_id
 
   ssh_host     = var.ssh_host
   ssh_user     = var.ssh_user
   ssh_key_path = var.ssh_key_path
 
-  depends_on = [module.mysql]
+  depends_on = [module.mysql, module.staging_backups]
 }

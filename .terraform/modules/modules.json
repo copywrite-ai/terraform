@@ -1,1 +1,1 @@
-{"Modules":[{"Key":"","Source":"","Dir":"."},{"Key":"mydumper","Source":"./modules/mydumper","Dir":"modules/mydumper"},{"Key":"mysql","Source":"./modules/mysql","Dir":"modules/mysql"}]}
+{"Modules":[{"Key":"","Source":"","Dir":"."},{"Key":"mydumper","Source":"./modules/mydumper","Dir":"modules/mydumper"},{"Key":"mysql","Source":"./modules/mysql","Dir":"modules/mysql"},{"Key":"staging_backups","Source":"./modules/staging","Dir":"modules/staging"}]}

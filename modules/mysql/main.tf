@@ -20,6 +20,21 @@ variable "database_name" {
   type = string
 }
 
+variable "ssh_host" {
+  type    = string
+  default = "127.0.0.1"
+}
+
+variable "ssh_user" {
+  type    = string
+  default = "root"
+}
+
+variable "ssh_key_path" {
+  type    = string
+  default = "/root/.ssh/id_ed25519"
+}
+
 resource "docker_image" "mysql" {
   name = "docker.1ms.run/library/mysql:8.0.32"
 }
@@ -36,9 +51,11 @@ resource "docker_container" "mysql" {
     "MYSQL_DATABASE=${var.database_name}",
   ]
 
-  volumes {
-    host_path      = var.project_root != "" ? "${var.project_root}/modules/mysql/init.sql" : abspath("${path.module}/init.sql")
-    container_path = "/docker-entrypoint-initdb.d/init.sql"
-    read_only      = true
+  healthcheck {
+    test         = ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p${var.root_password} --silent"]
+    interval     = "5s"
+    timeout      = "2s"
+    retries      = 20
+    start_period = "5s"
   }
 }

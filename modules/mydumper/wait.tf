@@ -4,6 +4,10 @@ variable "timeout_seconds" {
 }
 
 resource "null_resource" "wait_for_mysql_health" {
+  triggers = {
+    mysql_container_id = var.mysql_container_id
+  }
+
   connection {
     type        = "ssh"
     host        = var.ssh_host

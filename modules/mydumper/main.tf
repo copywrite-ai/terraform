@@ -41,6 +41,10 @@ variable "mysql_container_name" {
   type = string
 }
 
+variable "mysql_container_id" {
+  type = string
+}
+
 variable "restore_enabled" {
   type    = bool
   default = true
@@ -83,6 +87,12 @@ resource "null_resource" "ensure_backups_dir" {
 
 resource "null_resource" "stage_backups" {
   count = var.restore_enabled && var.backup_source == "local" ? 1 : 0
+  triggers = {
+    backup_fingerprint = sha256(join("", [
+      for f in fileset(var.local_backups_dir, "**") :
+      filesha256("${var.local_backups_dir}/${f}")
+    ]))
+  }
 
   connection {
     type        = "ssh"

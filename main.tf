@@ -31,7 +31,7 @@ variable "ssh_key_path" {
 
 variable "remote_data_dir" {
   type    = string
-  default = "/root/terraform-codex"
+  default = "/tmp/terraform-codex"
 }
 
 variable "restore_enabled" {
@@ -75,11 +75,12 @@ module "mydumper" {
   project_root  = local.project_root
   root_password = "p@ssword"
   database_name = "hello-world"
-  local_backups_dir  = "./backups"
+  local_backups_dir  = "${path.root}/backups"
   remote_backups_dir = "${var.remote_data_dir}/backups"
   backup_source = var.backup_source
   restore_enabled = var.restore_enabled
   mysql_container_name = module.mysql.container_name
+  mysql_container_id   = module.mysql.container_id
 
   ssh_host     = var.ssh_host
   ssh_user     = var.ssh_user
